@@ -11,13 +11,12 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Télécharger le projet
+      - name: Télécharger le dépôt
         uses: actions/checkout@v4
 
-      - name: Extraire le projet Android
+      - name: Extraire le projet
         run: |
-          rm -rf android-project extracted
-          mkdir extracted
+          mkdir -p android-project
           unzip -q VISIT-KOLWEZI-GITHUB-COMPILATION-PACK.zip -d extracted
           cp -a extracted/VISIT-KOLWEZI-Android/. android-project/
 
@@ -27,22 +26,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Installer Gradle 8.9
+      - name: Vérifier Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          echo "Android SDK 35 OK"
+
+      - name: Installer Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Vérifier Android SDK
-        run: |
-          test -d "$ANDROID_HOME/platforms/android-35"
-          test -d "$ANDROID_HOME/build-tools/35.0.0"
-
       - name: Compiler VISIT KOLWEZI
         working-directory: android-project
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug
 
-      - name: Publier APK
+      - name: Préparer APK
+        run: |
+          cp android-project/app/build/outputs/apk/debug/app-debug.apk VISIT-KOLWEZI.apk
+
+      - name: Donner l'APK
         uses: actions/upload-artifact@v4
         with:
-          name: VISIT-KOLWEZI-apk
-          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          name: VISIT-KOLWEZI
+          path: VISIT-KOLWEZI.apk
